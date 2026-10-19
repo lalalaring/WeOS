@@ -1,5 +1,5 @@
 # WeOS
-
+Notice：此项目为大肥鱼许愿产物！
 基于 **XanMod 内核 + Debian 工具链 + UKUI 桌面** 的桌面 Linux 发行版构建套件。
 面向中文用户与游戏场景：内置 NVIDIA 专有驱动、最新版 Wine、GE-Proton 与 umu-launcher，
 全流程使用中国镜像拉取。
