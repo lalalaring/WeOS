@@ -152,7 +152,35 @@ sudo dd if=dist/weos-1.0-amd64.iso of=/dev/sdX bs=8M status=progress oflag=sync
 
 ---
 
-## 7. 已知限制
+## 7. 参与开发
+
+仓库已初始化，主分支 `main`，首次提交为完整构建套件。
+
+```bash
+git status                 # 工作区应为干净
+git log --oneline          # 查看提交历史
+```
+
+改动约定：
+
+- 只改 `config/build.env` 的，提交信息写 `chore(config): ...`
+- 改包列表 / 钩子 / 源的，写 `feat(os-config): ...` 或 `fix(os-config): ...`
+- 文档改动写 `docs: ...`
+- 提交前请确保 `bash -n` 通过：
+
+```bash
+for f in build.sh scripts/*.sh os-config/hooks/normal/*.hook.chroot; do bash -n "$f" || echo "FAIL $f"; done
+```
+
+`.gitattributes` 已强制 LF 换行，脚本在索引中标记为 `100755`，
+因此克隆到 Linux 后可直接执行，无需额外 `chmod`。
+`build/`、`dist/`、`build-logs/` 与抓取的外部资产均已忽略。
+
+许可证尚未确定；在正式发布前建议补一份（GPL-2.0 或 MIT）。
+
+---
+
+## 8. 已知限制
 
 - **Secure Boot 必须关闭**：XanMod 内核未签名。后续可接入自签名 MOK 流程。
 - **UKUI 来自 testing**：个别依赖可能随 `forky` 变动而短暂不可满足，届时把 `DEBIAN_SUITE`
