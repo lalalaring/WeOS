@@ -1,0 +1,9 @@
+# ===== 图形 / 游戏运行时（不含 i386 依赖的部分）=====
+# 需要 i386 多架构的包（Steam / Wine / Lutris / Gamescope）在 0500-wine-proton 钩子中安装
+vulkan-tools
+mesa-vulkan-drivers
+libgl1-mesa-dri
+libglx-mesa0
+gamemode
+mangohud
+goverlay

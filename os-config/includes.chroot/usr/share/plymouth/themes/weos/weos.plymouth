@@ -1,0 +1,8 @@
+[Plymouth Theme]
+Name=WeOS
+Description=WeOS 开机动画
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/weos
+ScriptFile=/usr/share/plymouth/themes/weos/weos.script

@@ -1,0 +1,65 @@
+#!/bin/bash
+# 收尾：写入最终软件源、清理构建残留
+set -e
+# shellcheck source=/dev/null
+source /etc/weos-build.env
+
+echo "[weos] 0900 清理与最终源配置"
+
+# ---------- 最终系统软件源（清华 TUNA）----------
+cat > /etc/apt/sources.list <<EOF
+# WeOS 默认软件源（清华 TUNA 镜像）
+deb ${DEBIAN_MIRROR} ${DEBIAN_SUITE} main contrib non-free non-free-firmware
+EOF
+
+if [[ "${DEBIAN_SUITE}" == "bookworm" || "${DEBIAN_SUITE}" == "trixie" ]]; then
+    cat >> /etc/apt/sources.list <<EOF
+deb ${DEBIAN_MIRROR} ${DEBIAN_SUITE}-updates main contrib non-free non-free-firmware
+deb ${DEBIAN_MIRROR} ${DEBIAN_SUITE}-backports main contrib non-free non-free-firmware
+deb ${DEBIAN_SECURITY_MIRROR} ${DEBIAN_SUITE}-security main contrib non-free non-free-firmware
+EOF
+fi
+
+# 第三方源单独成文件，便于用户关闭
+# 注意：此处始终写上游地址，不使用 snapshot 模式下的 127.0.0.1，保证装到真机后可更新
+cat > /etc/apt/sources.list.d/weos-thirdparty.list <<EOF
+# XanMod 内核 + NVIDIA 专有驱动
+deb [signed-by=/etc/apt/keyrings/xanmod.gpg] ${XANMOD_MIRROR:-http://deb.xanmod.org} ${DEBIAN_SUITE} main non-free
+# WineHQ 最新版 Wine
+deb [signed-by=/etc/apt/keyrings/winehq.gpg] ${WINEHQ_MIRROR:-https://dl.winehq.org/wine-builds/debian} ${DEBIAN_SUITE} main
+# UKUI 4.20（Debian testing，受 /etc/apt/preferences.d/00-weos-pinning 约束）
+deb ${UKUI_MIRROR:-https://mirrors.tuna.tsinghua.edu.cn/debian} ${UKUI_SUITE} main
+EOF
+
+# 清理构建期临时源文件
+rm -f /etc/apt/sources.list.d/*.list.bak 2>/dev/null || true
+
+# ---------- 清理缓存 ----------
+apt-get clean
+rm -rf /var/lib/apt/lists/*
+rm -rf /var/cache/apt/archives/*.deb
+rm -rf /var/cache/debconf/*.dat-old
+
+# ---------- 清理构建资产 ----------
+rm -f /opt/weos/vendor/*.tar.gz 2>/dev/null || true
+rm -f /opt/weos/vendor/*.sha512sum 2>/dev/null || true
+rm -rf /tmp/* /var/tmp/* 2>/dev/null || true
+rm -f /var/log/*.log /var/log/apt/*.log 2>/dev/null || true
+rm -rf /var/log/journal/* 2>/dev/null || true
+
+# ---------- 重置标识 ----------
+: > /etc/machine-id
+rm -f /var/lib/dbus/machine-id 2>/dev/null || true
+rm -f /etc/ssh/ssh_host_* 2>/dev/null || true
+
+# ---------- 记录构建信息 ----------
+cat > /etc/weos-release <<EOF
+WEOS_VERSION=${WEOS_VERSION}
+WEOS_CODENAME=${WEOS_CODENAME}
+KERNEL=${KERNEL_IMAGE}
+NVIDIA=${NVIDIA_DRIVER}
+WINE=${WINE_FLAVOR}
+BUILD_DATE=$(date -Iseconds)
+EOF
+
+echo "[weos] 0900 完成"

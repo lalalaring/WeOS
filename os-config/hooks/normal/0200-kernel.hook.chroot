@@ -1,0 +1,58 @@
+#!/bin/bash
+# XanMod 内核校验与系统调优
+set -e
+# shellcheck source=/dev/null
+source /etc/weos-build.env
+
+echo "[weos] 0200 内核配置"
+
+KVER="$(ls -1 /lib/modules 2>/dev/null | grep -- "${KERNEL_BRANCH}" | sort -V | tail -1 || true)"
+if [[ -z "${KVER}" ]]; then
+    echo "[错误] 未找到 ${KERNEL_BRANCH} 内核（/lib/modules 为空或不匹配）" >&2
+    ls -l /lib/modules >&2 || true
+    exit 1
+fi
+echo "[weos] 内核版本：${KVER}"
+
+[[ -d "/lib/modules/${KVER}/build" ]] || {
+    echo "[错误] 缺少内核头文件 /lib/modules/${KVER}/build，NVIDIA DKMS 无法编译" >&2
+    exit 1
+}
+
+# 内核版本写入标记文件，供校验脚本读取
+echo "${KVER}" > /etc/weos-kernel-version
+
+# ---------- 桌面/游戏场景调优 ----------
+cat > /etc/sysctl.d/99-weos.conf <<'EOF'
+# WeOS 默认调优
+vm.swappiness = 10
+vm.vfs_cache_pressure = 50
+vm.max_map_count = 2147483642
+vm.dirty_bytes = 268435456
+vm.dirty_background_bytes = 67108864
+net.core.default_qdisc = fq
+net.ipv4.tcp_congestion_control = bbr
+net.ipv4.tcp_fastopen = 3
+fs.inotify.max_user_watches = 524288
+fs.inotify.max_user_instances = 1024
+fs.file-max = 2097152
+EOF
+
+cat > /etc/security/limits.d/99-weos-gaming.conf <<'EOF'
+*    soft    nofile    1048576
+*    hard    nofile    1048576
+*    soft    memlock   unlimited
+*    hard    memlock   unlimited
+EOF
+
+# ---------- 内核模块加载 ----------
+cat > /etc/modules-load.d/weos.conf <<'EOF'
+# WeOS 默认加载模块
+uinput
+EOF
+
+# ---------- 生成 initramfs（NVIDIA 阶段会再次重建）----------
+update-initramfs -c -k "${KVER}" || update-initramfs -u -k "${KVER}"
+
+ls -l /boot/vmlinuz-* /boot/initrd.img-* || true
+echo "[weos] 0200 完成"

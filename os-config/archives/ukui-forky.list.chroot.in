@@ -1,0 +1,3 @@
+# UKUI 4.20 来源：Debian testing（trixie 缺 ukui-session-manager / panel / control-center）
+# 通过 /etc/apt/preferences.d/00-weos-pinning 限制只取 ukui*/peony*/ukwm* 相关包
+deb @UKUI_MIRROR@ @UKUI_SUITE@ main

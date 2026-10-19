@@ -1,0 +1,20 @@
+# 构建产物与工作目录
+build/
+dist/
+build-logs/
+
+# 抓取的外部资产（体积大，不进版本库）
+build/config/includes.chroot/opt/weos/vendor/*.tar.gz
+build/config/includes.chroot/opt/weos/vendor/*.deb
+build/config/includes.chroot/opt/weos/vendor/*.sha512sum
+
+# 生成的密钥（可由 scripts/10-fetch-keys.sh 重建）
+build/config/includes.chroot_before_packages/etc/apt/keyrings/*.gpg
+
+# 系统文件
+.DS_Store
+Thumbs.db
+*.swp
+
+# 工具链内部数据（工作记录，不入库）
+.workbuddy-ai/

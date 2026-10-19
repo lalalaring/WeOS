@@ -1,0 +1,54 @@
+#!/bin/bash
+# Calamares 安装器品牌与模块配置
+set -e
+# shellcheck source=/dev/null
+source /etc/weos-build.env
+
+echo "[weos] 0700 Calamares 配置"
+
+if [[ ! -f /etc/calamares/settings.conf ]]; then
+    echo "[weos] 未找到 /etc/calamares/settings.conf，跳过"
+    exit 0
+fi
+
+# 切换到 WeOS 品牌目录（branding 组件位于 /etc/calamares/branding/weos）
+sed -i 's|^branding:.*|branding: weos|' /etc/calamares/settings.conf
+grep -n '^branding:' /etc/calamares/settings.conf
+
+# packages 模块置空：系统已预装全部软件，安装时不再联网拉包
+if [[ -f /etc/calamares/modules/packages.conf ]]; then
+    : > /etc/calamares/modules/packages.conf
+fi
+
+# ---------- 安装器入口 ----------
+install -d -m 0755 /usr/share/applications
+cat > /usr/share/applications/weos-installer.desktop <<'EOF'
+[Desktop Entry]
+Type=Application
+Name=安装 WeOS
+Name[en]=Install WeOS
+Comment=将 WeOS 安装到硬盘
+Comment[en]=Install WeOS to disk
+Exec=pkexec calamares
+Icon=calamares
+Terminal=false
+Categories=System;
+Keywords=install;setup;
+EOF
+
+install -d -m 0755 /etc/skel/Desktop
+cp -f /usr/share/applications/weos-installer.desktop /etc/skel/Desktop/
+chmod 0755 /etc/skel/Desktop/weos-installer.desktop
+
+# 已存在的 live 用户也放一份
+for home in /home/*; do
+    [[ -d "${home}" ]] || continue
+    install -d -m 0755 "${home}/Desktop"
+    cp -f /usr/share/applications/weos-installer.desktop "${home}/Desktop/" 2>/dev/null || true
+    chmod 0755 "${home}/Desktop/weos-installer.desktop" 2>/dev/null || true
+    chown -R "$(stat -c %U "${home}")":"$(stat -c %G "${home}")" "${home}/Desktop" 2>/dev/null || true
+done
+
+update-desktop-database /usr/share/applications 2>/dev/null || true
+
+echo "[weos] 0700 完成"

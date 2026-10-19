@@ -1,0 +1,28 @@
+---
+# Calamares 品牌配置（3.3 格式）
+componentName: weos
+
+strings:
+    productName:         WeOS
+    shortProductName:    WeOS
+    version:             @WEOS_VERSION@
+    shortVersion:        @WEOS_VERSION@
+    versionedName:       WeOS @WEOS_VERSION@ "@WEOS_CODENAME@"
+    shortVersionedName:  WeOS @WEOS_VERSION@
+    bootloaderEntryName: WeOS
+    productUrl:          https://weos.example.org/
+    supportUrl:          https://weos.example.org/support
+    releaseNotesUrl:     https://weos.example.org/releases
+
+images:
+    productLogo:         "productLogo.png"
+    productIcon:         "productIcon.png"
+    productWelcome:      "welcome.png"
+
+slideshow:               "show.qml"
+
+style:
+    sidebarBackground:    "#0b1026"
+    sidebarText:          "#f0f4ff"
+    sidebarTextSelect:    "#5684ff"
+    sidebarTextHighlight: "#5684ff"

@@ -1,0 +1,5 @@
+Vendor: WeOS
+Vendor-URL: https://weos.example.org/
+Bugs: https://weos.example.org/bugs
+Parent: Debian
+Parent-Vendor: Debian

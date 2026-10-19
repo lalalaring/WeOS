@@ -1,0 +1,16 @@
+# 统一使用 LF，避免在 Windows 上检出后 shell 脚本无法执行
+* text=auto eol=lf
+
+# 二进制资源
+*.png binary
+*.jpg binary
+*.gz binary
+*.deb binary
+*.iso binary
+
+# 明确标记需要 LF 的脚本
+*.sh text eol=lf
+*.hook.chroot text eol=lf
+*.list.chroot text eol=lf
+*.list.chroot.in text eol=lf
+Makefile text eol=lf

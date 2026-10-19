@@ -1,0 +1,11 @@
+# ===== 安装器（Calamares 3.3 / Qt6）=====
+calamares
+calamares-settings-debian
+plymouth
+plymouth-themes
+os-prober
+efibootmgr
+grub-efi-amd64
+grub-pc
+grub2-common
+squashfs-tools

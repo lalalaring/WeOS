@@ -1,0 +1,33 @@
+# ===== UKUI 4.20 核心 =====
+# 注意：Debian 没有 ukui-desktop-environment 元包，组件需逐个列出
+ukui-session-manager
+ukui-settings-daemon
+ukui-panel
+ukui-menu
+ukui-control-center
+ukui-media
+ukui-power-manager
+ukui-window-switch
+ukui-screensaver
+ukui-sidebar
+ukui-notification-daemon
+ukui-search
+ukui-biometric-auth
+ukui-greeter
+ukui-themes
+ukui-wallpapers
+ukwm
+peony
+peony-extensions
+
+# ===== 显示管理器 / 图形栈 =====
+lightdm
+xserver-xorg
+xserver-xorg-input-all
+xserver-xorg-video-all
+x11-xserver-utils
+x11-utils
+x11-xkb-utils
+mesa-utils
+libgl1-mesa-dri
+libglx-mesa0

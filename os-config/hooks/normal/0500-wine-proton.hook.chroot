@@ -1,0 +1,140 @@
+#!/bin/bash
+# Wine（WineHQ 最新版）+ Steam + Proton（GE-Proton / umu-launcher）
+set -e
+# shellcheck source=/dev/null
+source /etc/weos-build.env
+export DEBIAN_FRONTEND=noninteractive
+
+echo "[weos] 0500 Wine / Proton 配置"
+
+# ---------- 启用 i386 多架构（Steam / Wine 32 位组件必需）----------
+if ! dpkg --print-foreign-architectures | grep -qx i386; then
+    dpkg --add-architecture i386
+fi
+apt-get update
+
+# ---------- Wine：WineHQ 官方源，最新版本 ----------
+echo "[weos] 安装 winehq-${WINE_FLAVOR}"
+apt-get install -y --install-recommends "winehq-${WINE_FLAVOR}" || {
+    echo "[错误] winehq-${WINE_FLAVOR} 安装失败，尝试退回 Debian 自带 wine" >&2
+    apt-get install -y --install-recommends wine || true
+}
+apt-get install -y --no-install-recommends winetricks cabextract || true
+
+# ---------- Steam / Lutris / 游戏叠加层 ----------
+apt-get install -y --install-recommends steam-installer steam-devices || \
+    echo "[weos] steam 安装失败（非致命，可后续手动安装）"
+apt-get install -y --install-recommends lutris || echo "[weos] lutris 安装失败"
+apt-get install -y --no-install-recommends mangohud:i386 || true
+
+# gamescope 位于 backports
+if apt-cache policy gamescope 2>/dev/null | grep -q 'Candidate: (none)'; then
+    apt-get install -y -t "${DEBIAN_SUITE}-backports" gamescope || \
+        apt-get install -y gamescope || echo "[weos] gamescope 不可用"
+else
+    apt-get install -y gamescope || echo "[weos] gamescope 不可用"
+fi
+
+# ---------- GE-Proton：解包到系统目录 ----------
+PROTON_ROOT=/opt/weos/proton
+install -d -m 0755 "${PROTON_ROOT}"
+shopt -s nullglob
+for tb in /opt/weos/vendor/GE-Proton*-x86_64.tar.gz; do
+    echo "[weos] 解包 $(basename "${tb}")"
+    tar -xzf "${tb}" -C "${PROTON_ROOT}"
+done
+shopt -u nullglob
+ls -1 "${PROTON_ROOT}" || true
+
+# ---------- umu-launcher（Steam 之外用 Proton 运行游戏）----------
+shopt -s nullglob
+for deb in /opt/weos/vendor/python3-umu-launcher_*.deb; do
+    echo "[weos] 安装 $(basename "${deb}")"
+    apt-get install -y "${deb}" || echo "[weos] umu-launcher 安装失败"
+done
+shopt -u nullglob
+
+# ---------- 同步 GE-Proton 到 Steam 兼容工具目录 ----------
+cat > /usr/local/bin/weos-proton-sync <<'EOF'
+#!/bin/bash
+# 把系统内置的 GE-Proton 链接进当前用户的 Steam compatibilitytools.d
+set -e
+SRC=/opt/weos/proton
+[[ -d "${SRC}" ]] || exit 0
+for d in "${HOME}/.steam/steam/compatibilitytools.d" \
+         "${HOME}/.local/share/Steam/compatibilitytools.d"; do
+    mkdir -p "${d}"
+    for p in "${SRC}"/GE-Proton*; do
+        [[ -d "${p}" ]] || continue
+        ln -sfn "${p}" "${d}/$(basename "${p}")"
+    done
+done
+EOF
+chmod 0755 /usr/local/bin/weos-proton-sync
+
+cat > /etc/xdg/autostart/weos-proton-sync.desktop <<'EOF'
+[Desktop Entry]
+Type=Application
+Name=WeOS Proton Sync
+Comment=同步内置 GE-Proton 到 Steam
+Exec=/usr/local/bin/weos-proton-sync
+Terminal=false
+NoDisplay=true
+X-GNOME-Autostart-enabled=true
+EOF
+
+# ---------- 用 Proton 运行任意 Windows 程序 ----------
+cat > /usr/local/bin/weos-proton-run <<'EOF'
+#!/bin/bash
+# 用法: weos-proton-run <程序.exe> [参数...]
+# 说明: 通过 umu-launcher + 系统内置 GE-Proton 运行；首次运行会下载 Steam Runtime
+set -e
+if [[ $# -lt 1 ]]; then
+    echo "用法: weos-proton-run <程序.exe> [参数...]" >&2
+    exit 1
+fi
+if ! command -v umu-run >/dev/null 2>&1; then
+    echo "未安装 umu-launcher，请执行: sudo apt install /opt/weos/vendor/python3-umu-launcher_*.deb" >&2
+    exit 1
+fi
+GE="$(ls -d /opt/weos/proton/GE-Proton* 2>/dev/null | sort -V | tail -1)"
+[[ -n "${GE}" ]] || { echo "未找到 GE-Proton（/opt/weos/proton）" >&2; exit 1; }
+export PROTONPATH="${PROTONPATH:-${GE}}"
+export GAMEID="${GAMEID:-0}"
+exec umu-run "$@"
+EOF
+chmod 0755 /usr/local/bin/weos-proton-run
+
+# ---------- Wine 便捷命令 ----------
+cat > /usr/local/bin/weos-wine-tools <<'EOF'
+#!/bin/bash
+# 常用 Wine 维护命令
+case "${1:-help}" in
+    init)    WINEPREFIX="${WINEPREFIX:-$HOME/.wine}" wineboot -u ;;
+    regedit) WINEPREFIX="${WINEPREFIX:-$HOME/.wine}" wine regedit ;;
+    cfg)     WINEPREFIX="${WINEPREFIX:-$HOME/.wine}" winecfg ;;
+    tricks)  shift; winetricks "$@" ;;
+    version) wine --version; command -v umu-run >/dev/null && umu-run --version ;;
+    *)       echo "用法: weos-wine-tools {init|regedit|cfg|tricks|version}" ;;
+esac
+EOF
+chmod 0755 /usr/local/bin/weos-wine-tools
+
+# ---------- 桌面快捷方式 ----------
+install -d -m 0755 /usr/share/applications
+cat > /usr/share/applications/weos-proton-run.desktop <<'EOF'
+[Desktop Entry]
+Type=Application
+Name=Proton 运行器
+Name[en]=Proton Runner
+Comment=使用 GE-Proton 运行 Windows 游戏或程序
+Exec=bash -c 'f=$(zenity --file-selection --title="选择 Windows 程序" --file-filter="*.exe"); [ -n "$f" ] && weos-proton-run "$f"'
+Icon=wine
+Terminal=false
+Categories=Game;Emulator;
+EOF
+
+update-desktop-database /usr/share/applications 2>/dev/null || true
+
+echo "[weos] Wine 版本：$(wine --version 2>/dev/null || echo '未安装')"
+echo "[weos] 0500 完成"

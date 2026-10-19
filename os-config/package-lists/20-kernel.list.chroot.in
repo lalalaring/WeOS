@@ -1,0 +1,5 @@
+# ===== XanMod 内核 =====
+# 元包会连带 image + headers；显式列出 headers 确保 DKMS 可编译
+@KERNEL_META@
+@KERNEL_IMAGE@
+@KERNEL_HEADERS@

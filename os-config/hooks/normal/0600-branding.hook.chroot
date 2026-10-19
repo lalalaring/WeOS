@@ -1,0 +1,51 @@
+#!/bin/bash
+# 品牌：Plymouth 开机动画 / GRUB 主题 / 系统标识
+set -e
+# shellcheck source=/dev/null
+source /etc/weos-build.env
+
+echo "[weos] 0600 品牌配置"
+
+# ---------- Plymouth ----------
+if [[ -d /usr/share/plymouth/themes/weos ]]; then
+    if command -v plymouth-set-default-theme >/dev/null 2>&1; then
+        plymouth-set-default-theme -R weos || echo "[weos] plymouth 主题切换失败（非致命）"
+    else
+        echo "[weos] 未安装 plymouth，跳过"
+    fi
+fi
+
+# ---------- GRUB ----------
+install -d -m 0755 /boot/grub/themes/weos
+if [[ -f /usr/share/backgrounds/weos/weos-default.png ]]; then
+    cp -f /usr/share/backgrounds/weos/weos-default.png /boot/grub/themes/weos/background.png
+fi
+
+cat > /etc/default/grub <<'EOF'
+# WeOS GRUB 配置
+GRUB_DEFAULT=0
+GRUB_TIMEOUT=5
+GRUB_DISTRIBUTOR="WeOS"
+GRUB_CMDLINE_LINUX_DEFAULT="quiet splash"
+GRUB_CMDLINE_LINUX=""
+GRUB_THEME="/boot/grub/themes/weos/theme.txt"
+GRUB_GFXMODE=1920x1080,auto
+GRUB_GFXPAYLOAD_LINUX=keep
+GRUB_DISABLE_OS_PROBER=false
+GRUB_DISABLE_SUBMENU=y
+EOF
+
+# 重新生成 grub.cfg（live 环境可能无 /boot/grub/grub.cfg，忽略失败）
+update-grub 2>/dev/null || grub-mkconfig -o /boot/grub/grub.cfg 2>/dev/null || true
+
+# ---------- 终端登录信息 ----------
+cat > /etc/issue <<'EOF'
+WeOS GNU/Linux \n \l
+
+EOF
+
+cat > /etc/issue.net <<'EOF'
+WeOS GNU/Linux
+EOF
+
+echo "[weos] 0600 完成"

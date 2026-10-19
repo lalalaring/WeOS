@@ -1,0 +1,91 @@
+#!/bin/bash
+# WeOS 基础系统配置：locale / 时区 / 输入法 / 用户骨架
+set -e
+# shellcheck source=/dev/null
+source /etc/weos-build.env
+export DEBIAN_FRONTEND=noninteractive
+
+echo "[weos] 0100 基础系统配置"
+
+# ---------- locale ----------
+for loc in "zh_CN.UTF-8 UTF-8" "en_US.UTF-8 UTF-8"; do
+    grep -qxF "${loc}" /etc/locale.gen 2>/dev/null || echo "${loc}" >> /etc/locale.gen
+done
+sed -i 's/^# *\(zh_CN.UTF-8 UTF-8\)/\1/' /etc/locale.gen
+sed -i 's/^# *\(en_US.UTF-8 UTF-8\)/\1/' /etc/locale.gen
+locale-gen
+
+cat > /etc/default/locale <<'EOF'
+LANG=zh_CN.UTF-8
+LANGUAGE=zh_CN:zh
+LC_MESSAGES=zh_CN.UTF-8
+EOF
+
+# ---------- 时区 ----------
+ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+echo "Asia/Shanghai" > /etc/timezone
+
+# ---------- 主机名（安装后由 Calamares 覆盖）----------
+echo "weos" > /etc/hostname
+cat > /etc/hosts <<'EOF'
+127.0.0.1       localhost
+127.0.1.1       weos
+::1             localhost ip6-localhost ip6-loopback
+ff02::1         ip6-allnodes
+ff02::2         ip6-allrouters
+EOF
+
+# ---------- 中文输入法 ----------
+im-config -n fcitx5 || true
+
+install -d -m 0755 /etc/skel/.config/fcitx5
+cat > /etc/skel/.config/fcitx5/profile <<'EOF'
+[Groups/0]
+# Group Name
+Name=Default
+# Layout
+Default Layout=us
+# Default Input Method
+DefaultIM=pinyin
+
+[Groups/0/Items/0]
+# Name
+Name=keyboard-us
+# Layout
+Layout=
+
+[Groups/0/Items/1]
+# Name
+Name=pinyin
+# Layout
+Layout=
+
+[GroupOrder]
+0=Default
+EOF
+
+cat > /etc/X11/Xsession.d/70weos-im <<'EOF'
+# WeOS: fcitx5 输入法环境
+export GTK_IM_MODULE=fcitx
+export QT_IM_MODULE=fcitx
+export XMODIFIERS=@im=fcitx
+export SDL_IM_MODULE=fcitx
+if ! pgrep -x fcitx5 >/dev/null 2>&1; then
+    fcitx5 -d --replace >/dev/null 2>&1 &
+fi
+EOF
+
+# ---------- 默认图形界面 ----------
+systemctl set-default graphical.target || true
+systemctl enable lightdm.service || true
+systemctl enable NetworkManager.service || true
+systemctl enable bluetooth.service || true
+
+# ---------- 关闭不适用于 live/桌面的服务 ----------
+systemctl disable apt-daily.timer apt-daily-upgrade.timer 2>/dev/null || true
+systemctl mask systemd-firstboot.service 2>/dev/null || true
+
+# ---------- 时区/键盘的 live 兼容 ----------
+echo "KEYMAP=us" > /etc/vconsole.conf || true
+
+echo "[weos] 0100 完成"

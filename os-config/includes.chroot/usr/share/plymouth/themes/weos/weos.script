@@ -1,0 +1,23 @@
+# WeOS Plymouth 主题（script 模块，分辨率自适应，不依赖位图）
+
+Window.SetBackgroundTopColor(0.043, 0.063, 0.149);
+Window.SetBackgroundBottomColor(0.102, 0.133, 0.259);
+
+title_image = Image.Text("WeOS", 0.941, 0.957, 1.0, 1.0);
+title_sprite = Sprite(title_image);
+title_sprite.SetX(Window.GetWidth() / 2 - title_image.GetWidth() / 2);
+title_sprite.SetY(Window.GetHeight() / 2 - title_image.GetHeight() / 2 - 40);
+
+message_image = Image.Text("Starting...", 0.72, 0.78, 0.92, 1.0);
+message_sprite = Sprite(message_image);
+message_sprite.SetX(Window.GetWidth() / 2 - message_image.GetWidth() / 2);
+message_sprite.SetY(Window.GetHeight() / 2 + 48);
+
+fun refresh_callback() {
+    message_sprite.SetX(Window.GetWidth() / 2 - message_image.GetWidth() / 2);
+    message_sprite.SetY(Window.GetHeight() / 2 + 48);
+    title_sprite.SetX(Window.GetWidth() / 2 - title_image.GetWidth() / 2);
+    title_sprite.SetY(Window.GetHeight() / 2 - title_image.GetHeight() / 2 - 40);
+}
+
+Plymouth.SetRefreshFunction(refresh_callback);

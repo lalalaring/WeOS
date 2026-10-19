@@ -1,0 +1,47 @@
+Explanation: WeOS 优先级策略 —— 默认稳定版，UKUI 定点提升到 testing
+Package: *
+Pin: release n=@DEBIAN_SUITE@
+Pin-Priority: 990
+
+Package: *
+Pin: release n=@DEBIAN_SUITE@-security
+Pin-Priority: 990
+
+Package: *
+Pin: release n=@DEBIAN_SUITE@-updates
+Pin-Priority: 990
+
+Package: *
+Pin: release n=@DEBIAN_SUITE@-backports
+Pin-Priority: 500
+
+Explanation: 第三方仓库不得覆盖 Debian 官方包
+Package: *
+Pin: origin deb.xanmod.org
+Pin-Priority: 600
+
+Package: *
+Pin: origin dl.winehq.org
+Pin-Priority: 600
+
+Explanation: 低优先级兜底，仅在 trixie 无法满足依赖时从 forky 取包
+Package: *
+Pin: release n=@UKUI_SUITE@
+Pin-Priority: 100
+
+Explanation: UKUI 4.20 及其运行时依赖强制从 forky 取
+Package: ukui-*
+Pin: release n=@UKUI_SUITE@
+Pin-Priority: 900
+
+Package: peony*
+Pin: release n=@UKUI_SUITE@
+Pin-Priority: 900
+
+Package: ukwm*
+Pin: release n=@UKUI_SUITE@
+Pin-Priority: 900
+
+Package: libpeony*
+Pin: release n=@UKUI_SUITE@
+Pin-Priority: 900

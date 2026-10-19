@@ -1,0 +1,135 @@
+#!/bin/bash
+# NVIDIA 专有驱动安装（DKMS 针对 XanMod 内核编译）
+set -e
+# shellcheck source=/dev/null
+source /etc/weos-build.env
+export DEBIAN_FRONTEND=noninteractive
+
+echo "[weos] 0300 NVIDIA 驱动：${NVIDIA_DRIVER}（${NVIDIA_VARIANT}）"
+
+KVER="$(cat /etc/weos-kernel-version 2>/dev/null || ls -1 /lib/modules | grep -- "${KERNEL_BRANCH}" | sort -V | tail -1)"
+echo "[weos] 目标内核：${KVER}"
+
+apt-get update
+
+set +e
+apt-get install -y --no-install-recommends "${NVIDIA_DRIVER}" "${NVIDIA_DKMS}"
+INSTALL_RC=$?
+set -e
+
+# 驱动辅助工具来自 Debian non-free，失败不影响主驱动
+apt-get install -y --no-install-recommends nvidia-settings nvidia-prime 2>/dev/null || \
+    echo "[weos] nvidia-settings / nvidia-prime 安装失败（非致命）"
+
+if [[ ${INSTALL_RC} -ne 0 ]]; then
+    echo "[weos] NVIDIA 驱动包安装失败（rc=${INSTALL_RC}）"
+    if [[ "${NVIDIA_STRICT}" == "1" ]]; then
+        echo "[错误] NVIDIA_STRICT=1，终止构建。可改为 0 以 nouveau 模式继续。" >&2
+        exit 1
+    fi
+    echo "[weos] 降级为 nouveau 继续构建"
+    exit 0
+fi
+
+# 显式针对目标内核编译
+dkms autoinstall -k "${KVER}" || true
+dkms status || true
+
+if ! ls /lib/modules/"${KVER}"/updates/dkms/nvidia.ko* >/dev/null 2>&1 && \
+   ! ls /lib/modules/"${KVER}"/updates/dkms/nvidia.ko.zst >/dev/null 2>&1; then
+    echo "[weos] 未找到编译后的 nvidia.ko"
+    if [[ "${NVIDIA_STRICT}" == "1" ]]; then
+        echo "[错误] NVIDIA 模块未生成，终止构建（见 /var/lib/dkms/*/build/make.log）" >&2
+        exit 1
+    fi
+    exit 0
+fi
+echo "[weos] nvidia.ko 已生成：$(ls /lib/modules/"${KVER}"/updates/dkms/nvidia.ko* | head -1)"
+
+# ---------- 内核模块参数 ----------
+cat > /etc/modprobe.d/weos-nvidia.conf <<'EOF'
+# WeOS: NVIDIA 专有驱动默认参数
+options nvidia-drm modeset=1 fbdev=1
+options nvidia NVreg_PreserveVideoMemoryAllocations=1 NVreg_TemporaryFilePath=/var/tmp
+options nvidia NVreg_DynamicPowerManagement=0x02
+EOF
+
+cat > /etc/modules-load.d/weos-nvidia.conf <<'EOF'
+nvidia
+nvidia_modeset
+nvidia_uvm
+nvidia_drm
+EOF
+
+# 确保 nouveau 被屏蔽（nvidia-driver 自带该文件，这里做兜底）
+cat > /etc/modprobe.d/weos-blacklist-nouveau.conf <<'EOF'
+blacklist nouveau
+options nouveau modeset=0
+EOF
+
+# 早期 KMS：把模块放进 initramfs
+grep -qx "nvidia" /etc/initramfs-tools/modules 2>/dev/null || cat >> /etc/initramfs-tools/modules <<'EOF'
+nvidia
+nvidia_modeset
+nvidia_uvm
+nvidia_drm
+EOF
+
+update-initramfs -u -k "${KVER}"
+
+# ---------- 服务 ----------
+systemctl enable nvidia-persistenced.service 2>/dev/null || true
+for svc in nvidia-suspend.service nvidia-hibernate.service nvidia-resume.service; do
+    systemctl enable "${svc}" 2>/dev/null || true
+done
+
+# ---------- GPU 检测脚本 ----------
+cat > /usr/local/bin/weos-gpu-report <<'EOF'
+#!/bin/bash
+# 输出当前 NVIDIA 驱动与 GPU 状态
+echo "== 内核 =="; uname -r
+echo "== GPU =="; lspci -nn | grep -Ei 'vga|3d|display' || true
+echo "== 驱动模块 =="; lsmod | grep -E '^nvidia' || echo "nvidia 模块未加载"
+echo "== DKMS =="; dkms status 2>/dev/null || true
+echo "== nvidia-smi =="; nvidia-smi 2>/dev/null || echo "nvidia-smi 不可用"
+EOF
+chmod 0755 /usr/local/bin/weos-gpu-report
+
+# ---------- 安装到目标系统后自动切换 Xorg 配置 ----------
+cat > /usr/local/bin/weos-gpu-detect <<'EOF'
+#!/bin/bash
+# 仅在检测到 NVIDIA GPU 时启用 nvidia Xorg 配置，避免无卡机器黑屏
+set -e
+CONF=/etc/X11/xorg.conf.d/20-weos-nvidia.conf
+if lspci -nn | grep -qi 'nvidia'; then
+    cat > "$CONF" <<'INNER'
+Section "Device"
+    Identifier     "WeOS NVIDIA"
+    Driver         "nvidia"
+    Option         "AllowEmptyInitialConfiguration" "true"
+EndSection
+INNER
+else
+    rm -f "$CONF"
+fi
+EOF
+chmod 0755 /usr/local/bin/weos-gpu-detect
+
+cat > /etc/systemd/system/weos-gpu-detect.service <<'EOF'
+[Unit]
+Description=WeOS NVIDIA GPU detection
+Before=display-manager.service
+After=systemd-udev-settle.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/weos-gpu-detect
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+systemctl enable weos-gpu-detect.service || true
+
+echo "[weos] 0300 完成"

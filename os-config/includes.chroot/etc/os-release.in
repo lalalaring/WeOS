@@ -1,0 +1,11 @@
+PRETTY_NAME="WeOS @WEOS_VERSION@ (@WEOS_CODENAME@)"
+NAME="WeOS"
+VERSION_ID="@WEOS_VERSION@"
+VERSION="@WEOS_VERSION@ (@WEOS_CODENAME@)"
+VERSION_CODENAME=@WEOS_CODENAME@
+ID=weos
+ID_LIKE=debian
+HOME_URL="https://weos.example.org/"
+SUPPORT_URL="https://weos.example.org/support"
+BUG_REPORT_URL="https://weos.example.org/bugs"
+DEBIAN_CODENAME=@DEBIAN_SUITE@

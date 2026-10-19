@@ -1,0 +1,6 @@
+# Debian 基础源（清华 TUNA 镜像）
+# @STABLE_ONLY@ 前缀的行仅在稳定版（bookworm/trixie）渲染时保留
+deb @DEBIAN_MIRROR@ @DEBIAN_SUITE@ main contrib non-free non-free-firmware
+#@STABLE_ONLY@ deb @DEBIAN_MIRROR@ @DEBIAN_SUITE@-updates main contrib non-free non-free-firmware
+#@STABLE_ONLY@ deb @DEBIAN_MIRROR@ @DEBIAN_SUITE@-backports main contrib non-free non-free-firmware
+#@STABLE_ONLY@ deb @DEBIAN_SECURITY_MIRROR@ @DEBIAN_SUITE@-security main contrib non-free non-free-firmware

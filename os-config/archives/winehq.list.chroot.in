@@ -1,0 +1,2 @@
+# WineHQ 官方源（提供比 Debian 自带更新的 wine-devel / wine-staging）
+deb [signed-by=/etc/apt/keyrings/winehq.gpg] @WINEHQ_URI@ @DEBIAN_SUITE@ main

@@ -1,0 +1,108 @@
+#!/bin/bash
+# UKUI 桌面环境配置
+set -e
+# shellcheck source=/dev/null
+source /etc/weos-build.env
+export DEBIAN_FRONTEND=noninteractive
+
+echo "[weos] 0400 UKUI 配置"
+
+# ---------- 可选组件（不存在时跳过，不中断构建）----------
+apt-get update
+for pkg in ukui-quick ukui-screenshot ukui-system-monitor ukui-thumbnailer \
+           ukui-globalmenu ukui-menu-extensions ukui-notebook ukui-kwin; do
+    if apt-get install -y --no-install-recommends "${pkg}" >/dev/null 2>&1; then
+        echo "[weos] 已安装 ${pkg}"
+    else
+        echo "[weos] 跳过 ${pkg}（仓库中不可用）"
+    fi
+done
+
+# ---------- 会话文件兜底 ----------
+if [[ ! -f /usr/share/xsessions/ukui.desktop ]]; then
+    echo "[weos] 生成 ukui.desktop 会话文件"
+    cat > /usr/share/xsessions/ukui.desktop <<'EOF'
+[Desktop Entry]
+Name=UKUI
+Comment=UKUI Desktop Environment
+Exec=ukui-session
+TryExec=ukui-session
+Type=Application
+DesktopNames=UKUI
+EOF
+fi
+sed -i 's/^DesktopNames=.*/DesktopNames=UKUI/' /usr/share/xsessions/ukui.desktop
+
+# ---------- LightDM ----------
+cat > /etc/lightdm/lightdm.conf <<'EOF'
+[Seat:*]
+greeter-session=ukui-greeter
+user-session=ukui
+greeter-hide-users=false
+allow-guest=false
+logind-check-graphical=true
+EOF
+
+install -d -m 0755 /etc/lightdm/lightdm.conf.d
+cat > /etc/lightdm/lightdm.conf.d/10-weos.conf <<'EOF'
+[Seat:*]
+xserver-command=X -background none
+EOF
+
+# ---------- 桌面默认值（dconf）----------
+install -d -m 0755 /etc/dconf/profile /etc/dconf/db/local.d
+cat > /etc/dconf/profile/user <<'EOF'
+user-db:user
+system-db:local
+EOF
+
+cat > /etc/dconf/db/local.d/00-weos <<'EOF'
+[org/ukui/interface]
+font-name='Noto Sans CJK SC 11'
+document-font-name='Noto Sans CJK SC 11'
+monospace-font-name='Noto Sans Mono CJK SC 11'
+
+[org/ukui/desktop/background]
+picture-uri='file:///usr/share/backgrounds/weos/weos-default.png'
+picture-options='zoom'
+primary-color='#0b1026'
+
+[org/ukui/background]
+picture-uri='file:///usr/share/backgrounds/weos/weos-default.png'
+picture-options='zoom'
+
+[org/ukui/peony/desktop]
+font='Noto Sans CJK SC 11'
+
+[org/mate/desktop/interface]
+font-name='Noto Sans CJK SC 11'
+EOF
+
+dconf update || true
+
+# ---------- 默认壁纸 ----------
+install -d -m 0755 /usr/share/backgrounds/weos
+if [[ -f /usr/share/backgrounds/weos/weos-default.png ]]; then
+    ln -sf /usr/share/backgrounds/weos/weos-default.png /usr/share/backgrounds/default.png 2>/dev/null || true
+fi
+
+# ---------- 输入法随会话启动 ----------
+install -d -m 0755 /etc/xdg/autostart
+cat > /etc/xdg/autostart/weos-fcitx5.desktop <<'EOF'
+[Desktop Entry]
+Type=Application
+Name=Fcitx5
+Comment=中文输入法
+Exec=fcitx5 -d --replace
+Icon=fcitx
+Terminal=false
+X-GNOME-Autostart-enabled=true
+OnlyShowIn=UKUI;ukui;LXQt;X-Cinnamon;
+EOF
+
+# ---------- 关闭其他桌面会话，避免登录界面杂乱 ----------
+for s in gnome.desktop gnome-xorg.desktop plasma.desktop lxqt.desktop xfce.desktop; do
+    rm -f "/usr/share/xsessions/${s}" 2>/dev/null || true
+done
+
+echo "[weos] 0400 完成"

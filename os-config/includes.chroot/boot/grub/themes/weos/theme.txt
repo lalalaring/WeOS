@@ -1,0 +1,33 @@
+# WeOS GRUB 主题
+desktop-image: "background.png"
+desktop-color: "#0b1026"
+title-text: ""
+message-font: "DejaVu Sans Regular 14"
+message-color: "#c8d2e8"
+message-bg-color: "#0b1026"
+terminal-font: "DejaVu Sans Mono Regular 14"
+
++ boot_menu {
+    left = 22%
+    top = 28%
+    width = 56%
+    height = 48%
+    item_font = "DejaVu Sans Regular 16"
+    item_color = "#c8d2e8"
+    selected_item_color = "#ffffff"
+    item_height = 34
+    item_padding = 6
+    item_spacing = 4
+    icon_width = 20
+    icon_height = 20
+}
+
++ label {
+    top = 82%
+    left = 0
+    width = 100%
+    align = "center"
+    font = "DejaVu Sans Regular 12"
+    color = "#7b89a8"
+    text = "WeOS GNU/Linux  ·  上下键选择，回车启动"
+}

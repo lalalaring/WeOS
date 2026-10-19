@@ -1,0 +1,2 @@
+# XanMod 内核 + NVIDIA 专有驱动（non-free 组件由 XanMod 自行构建，与 LLVM 内核 ABI 匹配）
+deb [signed-by=/etc/apt/keyrings/xanmod.gpg] @XANMOD_URI@ @DEBIAN_SUITE@ main non-free
