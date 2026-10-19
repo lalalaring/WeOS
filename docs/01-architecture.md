@@ -68,8 +68,10 @@ LightDM → UKUI 会话
 |---|---|
 | `/opt/weos/proton/GE-Proton*/` | 内置 Proton 兼容层 |
 | `/opt/weos/vendor/` | 安装包缓存（umu deb 等） |
-| `/usr/local/bin/weos-proton-run` | 用 Proton 运行任意 exe |
-| `/usr/local/bin/weos-proton-sync` | 把 GE-Proton 链入 Steam 兼容工具目录 |
+| `/usr/local/bin/weos-proton-open` | 双击 .exe 的默认处理程序（GE-Proton） |
+| `/etc/xdg/mimeapps.list` | 系统级默认关联，把 .exe 绑定到 Proton |
+| `/usr/local/bin/weos-proton-run` | 用 Proton 运行任意 exe（命令行） |
+| `/usr/local/bin/weos-proton-sync` | 把 GE-Proton 链入 Steam 兼容工具目录 + 写用户级关联 |
 | `/usr/local/bin/weos-gpu-report` | 一键输出内核/GPU/驱动状态 |
 | `/usr/local/bin/weos-wine-tools` | Wine 常用维护命令 |
 | `/etc/weos-release` | 构建信息（内核、驱动、Wine 分支、构建时间） |

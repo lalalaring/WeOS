@@ -1,0 +1,13 @@
+# WeOS 系统级默认文件关联
+# 双击 .exe 直接走 GE-Proton，而不是 Wine 或弹出"选择程序"对话框
+# 用户级 ~/.config/mimeapps.list 优先级更高，weos-proton-sync 会在登录时写入
+
+[Default Applications]
+application/x-ms-dos-executable=weos-proton-handler.desktop
+application/x-msdownload=weos-proton-handler.desktop
+
+[Added Associations]
+application/x-ms-dos-executable=weos-proton-handler.desktop;wine.desktop;
+application/x-msdownload=weos-proton-handler.desktop;wine.desktop;
+
+[Removed Associations]

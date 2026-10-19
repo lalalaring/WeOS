@@ -59,6 +59,7 @@ shopt -u nullglob
 cat > /usr/local/bin/weos-proton-sync <<'EOF'
 #!/bin/bash
 # 把系统内置的 GE-Proton 链接进当前用户的 Steam compatibilitytools.d
+# 同时把 .exe 的默认打开方式设为 Proton（覆盖桌面环境的默认值）
 set -e
 SRC=/opt/weos/proton
 [[ -d "${SRC}" ]] || exit 0
@@ -70,6 +71,11 @@ for d in "${HOME}/.steam/steam/compatibilitytools.d" \
         ln -sfn "${p}" "${d}/$(basename "${p}")"
     done
 done
+
+if command -v xdg-mime >/dev/null 2>&1; then
+    xdg-mime default weos-proton-handler.desktop application/x-ms-dos-executable 2>/dev/null || true
+    xdg-mime default weos-proton-handler.desktop application/x-msdownload 2>/dev/null || true
+fi
 EOF
 chmod 0755 /usr/local/bin/weos-proton-sync
 
@@ -126,14 +132,32 @@ install -d -m 0755 /usr/share/applications
 cat > /usr/share/applications/weos-proton-run.desktop <<'EOF'
 [Desktop Entry]
 Type=Application
-Name=Proton 运行器
-Name[en]=Proton Runner
-Comment=使用 GE-Proton 运行 Windows 游戏或程序
+Name=Proton 运行器（选择文件）
+Name[en]=Proton Runner (pick a file)
+Comment=手动选择 Windows 程序并用 GE-Proton 运行
 Exec=bash -c 'f=$(zenity --file-selection --title="选择 Windows 程序" --file-filter="*.exe"); [ -n "$f" ] && weos-proton-run "$f"'
 Icon=wine
 Terminal=false
 Categories=Game;Emulator;
 EOF
+
+# ---------- 双击 .exe 直接用 Proton 运行 ----------
+# 文件来源：includes.chroot（/usr/local/bin/weos-proton-open、
+#           /usr/share/applications/weos-proton-handler.desktop、/etc/xdg/mimeapps.list）
+chmod 0755 /usr/local/bin/weos-proton-open 2>/dev/null || \
+    echo "[weos] 警告：weos-proton-open 未找到，双击关联将不可用"
+
+update-mime-database /usr/share/mime 2>/dev/null || true
+update-desktop-database /usr/share/applications 2>/dev/null || true
+
+# 为镜像内已存在的用户也写入关联（新用户由 /etc/xdg/mimeapps.list 生效）
+for home in /home/*; do
+    [[ -d "${home}" ]] || continue
+    for mime in application/x-ms-dos-executable application/x-msdownload; do
+        su -s /bin/sh "$(stat -c %U "${home}")" -c \
+            "xdg-mime default weos-proton-handler.desktop ${mime}" >/dev/null 2>&1 || true
+    done
+done
 
 update-desktop-database /usr/share/applications 2>/dev/null || true
 

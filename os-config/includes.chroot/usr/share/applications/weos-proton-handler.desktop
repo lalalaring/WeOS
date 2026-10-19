@@ -1,0 +1,14 @@
+[Desktop Entry]
+Type=Application
+Name=用 Proton 运行
+Name[en]=Run with Proton
+GenericName=Windows 程序启动器
+GenericName[en]=Windows Program Launcher
+Comment=通过内置 GE-Proton 运行 Windows 程序
+Comment[en]=Run Windows programs with the bundled GE-Proton
+Exec=/usr/local/bin/weos-proton-open %f
+Icon=wine
+Terminal=false
+StartupNotify=false
+Categories=Game;Emulator;
+MimeType=application/x-ms-dos-executable;application/x-msdownload;

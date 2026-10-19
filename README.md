@@ -26,6 +26,9 @@
 内核 ABI 说明：`x64v3` 需要 2015 年后的 CPU（Haswell / Zen 及以上）。
 老机器请把 `config/build.env` 中的 `KERNEL_ABI` 改为 `x64v2` 或 `x64v1`。
 
+**开箱即用的 Proton**：双击任意 `.exe` 默认就用内置 GE-Proton 运行（不经过 Wine、
+不需要开终端），每个游戏目录自动分配独立前缀。详见 [docs/05-wine-proton.md](docs/05-wine-proton.md)。
+
 ---
 
 ## 2. 三个关键设计决策

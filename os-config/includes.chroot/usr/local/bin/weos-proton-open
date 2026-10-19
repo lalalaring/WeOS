@@ -1,0 +1,91 @@
+#!/bin/bash
+# SPDX-License-Identifier: GPL-2.0-only
+# 双击 .exe 时用系统内置 GE-Proton 运行（无终端环境，错误用 zenity 弹窗）
+#
+# 用法：weos-proton-open <程序.exe> [参数...]
+#
+# 设计要点：
+#   1. 每个游戏目录一个独立 Wine 前缀，存档/配置不互相污染
+#   2. 优先走 umu-launcher（自动管理 Steam Runtime），缺失时回退 proton run
+#   3. 输出写日志，失败弹窗并附带日志尾部，便于排查
+
+set -uo pipefail
+
+PROTON_ROOT="${WEOS_PROTON_ROOT:-/opt/weos/proton}"
+DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
+PREFIX_ROOT="${DATA_HOME}/weos/proton-prefixes"
+LOG_DIR="${DATA_HOME}/weos/logs"
+
+msg() {
+    local kind="$1"; shift
+    local text
+    text="$(printf '%b' "$*")"
+    if command -v zenity >/dev/null 2>&1 && [ -n "${DISPLAY:-}${WAYLAND_DISPLAY:-}" ]; then
+        zenity "--${kind}" --width=480 --title="WeOS Proton" --text="${text}" 2>/dev/null
+    else
+        printf '%s\n' "${text}" >&2
+    fi
+}
+
+target="${1:-}"
+if [ -z "${target}" ]; then
+    msg error "没有指定文件。\\n\\n用法：weos-proton-open <程序.exe>"
+    exit 1
+fi
+if [ ! -f "${target}" ]; then
+    msg error "文件不存在：\\n${target}"
+    exit 1
+fi
+shift
+
+# 统一成绝对路径（文件管理器可能传相对路径）
+case "${target}" in
+    /*) : ;;
+    *)  target="$(cd "$(dirname "${target}")" 2>/dev/null && pwd)/$(basename "${target}")" ;;
+esac
+if [ ! -f "${target}" ]; then
+    msg error "无法解析文件路径：\\n${target}"
+    exit 1
+fi
+
+# 取版本号最高的 GE-Proton
+ge="$(ls -d "${PROTON_ROOT}"/GE-Proton* 2>/dev/null | sort -V | tail -1)"
+if [ -z "${ge}" ] || [ ! -x "${ge}/proton" ]; then
+    msg error "未找到可用的 GE-Proton。\\n\\n预期位置：${PROTON_ROOT}/GE-Proton*/proton\\n\\n可执行 weos-gpu-report 查看系统状态。"
+    exit 1
+fi
+
+game_dir="$(dirname "${target}")"
+key="$(basename "${game_dir}" | tr -d '\n' | tr -c 'A-Za-z0-9._-' '_' | cut -c1-64)"
+[ -n "${key}" ] || key="default"
+prefix="${PREFIX_ROOT}/${key}"
+mkdir -p "${prefix}" "${LOG_DIR}" 2>/dev/null || true
+
+# 首次运行提示（Steam Runtime 需联网下载）
+if [ ! -d "${DATA_HOME}/umu" ] && [ ! -d "${DATA_HOME}/SteamLinuxRuntime_sniper" ]; then
+    msg info "首次用 Proton 运行程序，需要下载 Steam Runtime（约 300 MB）。\\n请保持联网，下载完成后可离线使用。"
+fi
+
+export PROTONPATH="${ge}"
+export WINEPREFIX="${prefix}"
+export GAMEID="${GAMEID:-0}"
+export STEAM_COMPAT_CLIENT_INSTALL_PATH="${STEAM_COMPAT_CLIENT_INSTALL_PATH:-$HOME/.steam/steam}"
+
+log="${LOG_DIR}/$(date +%Y%m%d-%H%M%S)-$(basename "${target%.*}").log"
+cd "${game_dir}" || exit 1
+
+if command -v umu-run >/dev/null 2>&1; then
+    umu-run "${target}" "$@" >>"${log}" 2>&1
+    rc=$?
+else
+    export STEAM_COMPAT_DATA_PATH="${prefix}"
+    "${ge}/proton" run "${target}" "$@" >>"${log}" 2>&1
+    rc=$?
+fi
+
+if [ "${rc}" -ne 0 ]; then
+    msg error "Proton 运行失败（退出码 ${rc}）\\n\\n日志：${log}\\n\\n$(tail -n 12 "${log}" 2>/dev/null)"
+    exit "${rc}"
+fi
+
+exit 0

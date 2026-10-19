@@ -84,7 +84,53 @@ exec umu-run "$@"
 **首次运行需要联网**：umu-launcher 会下载 Steam Linux Runtime（sniper）切片到
 `~/.local/share/umu/`，约 300 MB，之后可离线使用。
 
-## 4. 游戏叠加层与工具
+## 4. 双击运行 .exe
+
+**默认行为：双击 .exe 直接用 GE-Proton 运行**，不需要打开终端，也不经过 Wine。
+
+实现由三部分组成：
+
+| 文件 | 作用 |
+|---|---|
+| `/usr/local/bin/weos-proton-open` | 实际执行体，无终端环境，失败用 zenity 弹窗 |
+| `/usr/share/applications/weos-proton-handler.desktop` | 声明处理 `application/x-ms-dos-executable` |
+| `/etc/xdg/mimeapps.list` | 系统级默认关联，覆盖 Wine 的默认值 |
+
+工作方式：
+
+1. 取 `/opt/weos/proton/` 下版本号最高的 GE-Proton；
+2. 以 **exe 所在目录**为键生成独立前缀 `~/.local/share/weos/proton-prefixes/<目录名>/`，
+   所以同一游戏目录下的多个 exe 共用前缀，不同游戏互不污染；
+3. 优先调用 `umu-run`（自动管理 Steam Runtime），缺失时回退 `<GE>/proton run`；
+4. 输出写入 `~/.local/share/weos/logs/`，失败时弹窗并附带日志末尾 12 行。
+
+首次运行会提示下载 Steam Runtime（约 300 MB），之后可离线使用。
+
+**如果双击没有生效**（个别文件管理器不读 `mimeapps.list`）：
+
+```bash
+# 手工设为默认
+xdg-mime default weos-proton-handler.desktop application/x-ms-dos-executable
+xdg-mime query default application/x-ms-dos-executable   # 应输出 weos-proton-handler.desktop
+```
+
+或在文件管理器里右键 → 打开方式 → 用 Proton 运行 → 设为默认。
+登录时 `weos-proton-sync` 也会自动写入用户级关联，通常无需手工干预。
+
+**不想用 Proton 的场合**：
+
+```bash
+# 临时改用 WineHQ 的 wine 打开
+WINEPREFIX=~/.wine wine /path/to/app.exe
+
+# 恢复 Wine 为默认
+xdg-mime default wine.desktop application/x-ms-dos-executable
+```
+
+`.msi` 安装包没有关联到 Proton（Proton 的前缀不适合装系统级 MSI），
+双击仍由 Wine 的 `msiexec` 处理。
+
+## 5. 游戏叠加层与工具
 
 | 工具 | 命令 | 说明 |
 |---|---|---|
@@ -109,7 +155,7 @@ sudo apt install scx-scheds
 sudo scx_lavd --autopilot      # 或 scx_bpfland
 ```
 
-## 5. 32 位支持
+## 6. 32 位支持
 
 Steam 与大量老游戏需要 i386 运行时。构建时已在 chroot 内执行
 `dpkg --add-architecture i386`，并安装了 `steam-libs-i386`、`wine*-i386`、
@@ -122,7 +168,7 @@ dpkg --print-foreign-architectures     # 应输出 i386
 dpkg -l | grep ':i386' | wc -l         # 应有几十个包
 ```
 
-## 6. 版本核对
+## 7. 版本核对
 
 ```sh
 wine --version
@@ -134,7 +180,7 @@ ls /opt/weos/proton/
 `/opt/weos/vendor/VERSIONS` 记录了构建时抓取的 GE-Proton 与 umu-launcher 版本，
 便于复现问题。
 
-## 7. 常见问题
+## 8. 常见问题
 
 **Steam 打不开 / 闪退**
 
