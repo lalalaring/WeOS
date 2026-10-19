@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: GPL-2.0-only
 # 下载并安装第三方仓库签名密钥到构建树的 keyrings 目录
 # 产物：build/config/includes.chroot_before_packages/etc/apt/keyrings/{xanmod,winehq}.gpg
 set -Eeuo pipefail

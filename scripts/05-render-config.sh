@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: GPL-2.0-only
 # 将 os-config 中的 *.in 模板渲染为 live-build 实际读取的文件
 # 同时生成 /etc/weos-build.env 供 chroot 钩子读取
 set -Eeuo pipefail

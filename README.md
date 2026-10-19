@@ -176,7 +176,7 @@ for f in build.sh scripts/*.sh os-config/hooks/normal/*.hook.chroot; do bash -n 
 因此克隆到 Linux 后可直接执行，无需额外 `chmod`。
 `build/`、`dist/`、`build-logs/` 与抓取的外部资产均已忽略。
 
-许可证尚未确定；在正式发布前建议补一份（GPL-2.0 或 MIT）。
+本项目以 **GPL-2.0** 发布，详见 [LICENSE](LICENSE)。
 
 ---
 
@@ -188,3 +188,20 @@ for f in build.sh scripts/*.sh os-config/hooks/normal/*.hook.chroot; do bash -n 
 - **NVIDIA 驱动为 ISO 内预编译**：升级内核后需重新 `dkms autoinstall`（已配置自动触发）。
 - **umu-launcher 首次运行需联网**下载 Steam Runtime 切片。
 - 未内置 Flatpak / Snap；未做 ARM64 适配。
+
+---
+
+## 9. 许可证
+
+本项目（构建脚本、配置模板、文档、品牌资源）以 **GNU General Public License v2.0**
+发布，全文见 [LICENSE](LICENSE)。
+
+SPDX 标识符：`GPL-2.0-only`
+
+需要说明的边界：
+
+- WeOS 产出的 ISO 中**包含**第三方软件（Debian 软件包、XanMod 内核、NVIDIA 专有驱动、
+  Wine、GE-Proton 等），它们各自遵循原有许可证。其中 NVIDIA 驱动为闭源专有许可，
+  再分发需遵守 NVIDIA 的许可条款。
+- GPL-2.0 覆盖的是本仓库的构建逻辑与定制文件，不改变上述上游组件的授权。
+- 若你在此基础上二次分发 ISO，请自行确认各上游组件的再分发条件。

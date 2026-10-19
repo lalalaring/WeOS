@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: GPL-2.0-only
 # 外部仓库镜像（XanMod / WineHQ 无官方中国镜像，需自建快照）
 #
 #   ./scripts/20-mirror-external.sh snapshot   抓取完整仓库快照到 LOCAL_MIRROR_DIR

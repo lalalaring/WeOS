@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: GPL-2.0-only
 # 抓取外部运行时资产到构建树（离线内置进 ISO）
 #   - GE-Proton（Proton 兼容层，x86_64）
 #   - umu-launcher（Steam 之外的 Proton 启动器，Debian 13 原生 deb）

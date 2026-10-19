@@ -1,4 +1,5 @@
 #!/bin/bash
+# SPDX-License-Identifier: GPL-2.0-only
 # 收尾：写入最终软件源、清理构建残留
 set -e
 # shellcheck source=/dev/null
