@@ -61,8 +61,12 @@ key="$(basename "${game_dir}" | tr -d '\n' | tr -c 'A-Za-z0-9._-' '_' | cut -c1-
 prefix="${PREFIX_ROOT}/${key}"
 mkdir -p "${prefix}" "${LOG_DIR}" 2>/dev/null || true
 
-# 首次运行提示（Steam Runtime 需联网下载）
-if [ ! -d "${DATA_HOME}/umu" ] && [ ! -d "${DATA_HOME}/SteamLinuxRuntime_sniper" ]; then
+# Steam 运行时：优先使用 ISO 内置的那份，本地解压即可，无需联网
+if [ -x /usr/local/bin/weos-steamrt-seed ] && [ -f "${WEOS_STEAMRT_DIR:-/opt/weos/steam-runtime}/VERSION" ]; then
+    if ! /usr/local/bin/weos-steamrt-seed >/dev/null 2>&1; then
+        msg info "内置 Steam 运行时初始化失败，将改为联网下载。\\n\\n可手动重试：weos-steamrt-seed"
+    fi
+elif [ ! -d "${DATA_HOME}/umu" ]; then
     msg info "首次用 Proton 运行程序，需要下载 Steam Runtime（约 300 MB）。\\n请保持联网，下载完成后可离线使用。"
 fi
 

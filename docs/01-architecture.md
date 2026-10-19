@@ -67,6 +67,8 @@ LightDM → UKUI 会话
 | 路径 | 内容 |
 |---|---|
 | `/opt/weos/proton/GE-Proton*/` | 内置 Proton 兼容层 |
+| `/opt/weos/steam-runtime/` | 内置 Steam Linux Runtime（steamrt4，约 165 MB） |
+| `/usr/local/bin/weos-steamrt-seed` | 把内置运行时释放到当前用户目录 |
 | `/opt/weos/vendor/` | 安装包缓存（umu deb 等） |
 | `/usr/local/bin/weos-proton-open` | 双击 .exe 的默认处理程序（GE-Proton） |
 | `/etc/xdg/mimeapps.list` | 系统级默认关联，把 .exe 绑定到 Proton |

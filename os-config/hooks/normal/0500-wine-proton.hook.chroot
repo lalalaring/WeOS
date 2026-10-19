@@ -146,6 +146,14 @@ EOF
 #           /usr/share/applications/weos-proton-handler.desktop、/etc/xdg/mimeapps.list）
 chmod 0755 /usr/local/bin/weos-proton-open 2>/dev/null || \
     echo "[weos] 警告：weos-proton-open 未找到，双击关联将不可用"
+chmod 0755 /usr/local/bin/weos-steamrt-seed 2>/dev/null || true
+
+# 内置 Steam 运行时状态
+if [[ -f /opt/weos/steam-runtime/VERSION ]]; then
+    echo "[weos] 已内置 Steam 运行时：$(tr '\n' ' ' < /opt/weos/steam-runtime/VERSION)"
+else
+    echo "[weos] 未内置 Steam 运行时，将由 umu 首次运行联网下载"
+fi
 
 update-mime-database /usr/share/mime 2>/dev/null || true
 update-desktop-database /usr/share/applications 2>/dev/null || true

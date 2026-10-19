@@ -12,6 +12,7 @@
  │   ├─ 05-render-config.sh       渲染 *.in 模板、生成 /etc/weos-build.env
  │   ├─ 10-fetch-keys.sh          导入 XanMod / WineHQ GPG 密钥
  │   ├─ 30-fetch-runtime.sh       抓取 GE-Proton / umu-launcher
+ │   ├─ 35-fetch-steamrt.sh       抓取 Steam Linux Runtime（内置，约 165 MB）
  │   └─ 检查本地镜像快照（snapshot 模式）
  ├─ build
  │   ├─ （snapshot 模式）启动本地 HTTP 镜像服务

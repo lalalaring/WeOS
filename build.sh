@@ -95,8 +95,9 @@ cmd_prepare() {
     c_info "4/6 导入软件源签名密钥"
     bash "${ROOT_DIR}/scripts/10-fetch-keys.sh"
 
-    c_info "5/6 抓取外部运行时资产（GE-Proton / umu-launcher）"
+    c_info "5/6 抓取外部运行时资产（GE-Proton / umu-launcher / Steam 运行时）"
     bash "${ROOT_DIR}/scripts/30-fetch-runtime.sh"
+    bash "${ROOT_DIR}/scripts/35-fetch-steamrt.sh"
 
     c_info "6/6 检查本地镜像快照"
     if [[ "${MIRROR_MODE}" == "snapshot" ]]; then

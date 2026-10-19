@@ -10,6 +10,7 @@
 | XanMod 内核 | ❌ 无官方中国镜像 | 仅有 `deb.xanmod.org`（IBM Cloud 托管） |
 | WineHQ | ❌ 无官方中国镜像 | 仅有 `dl.winehq.org` |
 | GitHub（Proton/umu） | ⚠️ 需加速 | 用 `gh-proxy.com` 等前缀代理 |
+| Valve CDN（Steam 运行时） | ⚠️ 通常直连可用 | `repo.steampowered.com`，慢时可用 `STEAMRT_PROXY` |
 
 因此 WeOS 的策略是：**Debian 系全部走清华 TUNA；XanMod/WineHQ 提供"本地快照"模式；
 GitHub 资产走加速前缀**。这样既不假装有镜像，也不让构建被外网卡住。

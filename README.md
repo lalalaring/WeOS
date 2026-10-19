@@ -21,13 +21,15 @@ Notice：此项目为大肥鱼许愿产物！
 | Wine | WineHQ `devel` | 最新 | dl.winehq.org |
 | Proton | GE-Proton | 11-10 | GitHub |
 | Proton 启动器 | umu-launcher | 1.4.4 | GitHub（Debian 13 原生 deb） |
+| Steam 运行时 | Steam Linux Runtime `steamrt4` | 4.0.20261007 | repo.steampowered.com（**内置**） |
 | 安装器 | Calamares | 3.3.14 | Debian |
 
 内核 ABI 说明：`x64v3` 需要 2015 年后的 CPU（Haswell / Zen 及以上）。
 老机器请把 `config/build.env` 中的 `KERNEL_ABI` 改为 `x64v2` 或 `x64v1`。
 
 **开箱即用的 Proton**：双击任意 `.exe` 默认就用内置 GE-Proton 运行（不经过 Wine、
-不需要开终端），每个游戏目录自动分配独立前缀。详见 [docs/05-wine-proton.md](docs/05-wine-proton.md)。
+不需要开终端），每个游戏目录自动分配独立前缀。**Steam 运行时也已内置**，
+首次运行本地解压即可，全程离线。详见 [docs/05-wine-proton.md](docs/05-wine-proton.md)。
 
 ---
 
@@ -75,6 +77,7 @@ WeOS/
 │   ├── 10-fetch-keys.sh        # 导入 XanMod / WineHQ 签名密钥
 │   ├── 20-mirror-external.sh   # XanMod / WineHQ 本地快照与 HTTP 服务
 │   ├── 30-fetch-runtime.sh     # 抓取 GE-Proton / umu-launcher
+│   ├── 35-fetch-steamrt.sh     # 抓取 Steam Linux Runtime 并内置
 │   ├── 90-verify-iso.sh        # 产物校验
 │   └── gen-assets.py           # 生成壁纸 / Logo（纯标准库）
 ├── docs/                       # 架构、构建、镜像、NVIDIA、Wine/Proton、排错
@@ -137,6 +140,7 @@ sudo dd if=dist/weos-1.0-amd64.iso of=/dev/sdX bs=8M status=progress oflag=sync
 | `NVIDIA_BRANCH` | 驱动分支 | `580` / `590` / `595` / `610` / `615` |
 | `NVIDIA_VARIANT` | 模块类型 | `proprietary` / `open` |
 | `WINE_FLAVOR` | Wine 分支 | `devel` / `staging` / `stable` |
+| `BUNDLE_STEAM_RUNTIME` | 是否内置 Steam 运行时 | `1`（内置）/ `0`（联网下载） |
 | `DEBIAN_SUITE` | 基础系统 | `trixie`（稳定）/ `forky`（滚动） |
 | `MIRROR_MODE` | 镜像策略 | `online` / `snapshot` |
 
@@ -189,7 +193,8 @@ for f in build.sh scripts/*.sh os-config/hooks/normal/*.hook.chroot; do bash -n 
 - **UKUI 来自 testing**：个别依赖可能随 `forky` 变动而短暂不可满足，届时把 `DEBIAN_SUITE`
   切到 `forky` 全量滚动即可绕过。
 - **NVIDIA 驱动为 ISO 内预编译**：升级内核后需重新 `dkms autoinstall`（已配置自动触发）。
-- **umu-launcher 首次运行需联网**下载 Steam Runtime 切片。
+- **Steam 运行时已内置**（约 165 MB 压缩 / 600 MB 展开），双击 exe 首次运行无需联网；
+  但 Lutris / Heroic 走各自的运行时管理，仍会自行下载。
 - 未内置 Flatpak / Snap；未做 ARM64 适配。
 
 ---

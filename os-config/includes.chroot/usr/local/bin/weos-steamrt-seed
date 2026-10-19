@@ -1,0 +1,98 @@
+#!/bin/bash
+# SPDX-License-Identifier: GPL-2.0-only
+# 把 ISO 内置的 Steam Linux Runtime 释放到当前用户目录
+#
+# umu-launcher 约定：运行时安装于 $XDG_DATA_HOME/umu/<channel>，
+# 完成后写入 .installed.ok 标记，并把 umu 软链到 _v2-entry-point。
+# 本脚本严格复现这一结构，使 umu 认为运行时"已安装"，从而跳过联网下载。
+#
+# 用法：weos-steamrt-seed [--quiet]
+# 幂等：已安装时直接返回 0。
+
+set -uo pipefail
+
+QUIET=0
+[[ "${1:-}" == "--quiet" ]] && QUIET=1
+
+SRC_DIR="${WEOS_STEAMRT_DIR:-/opt/weos/steam-runtime}"
+VERSION_FILE="${SRC_DIR}/VERSION"
+
+# 未内置运行时：交给 umu 自行下载，这里不算失败
+if [[ ! -f "${VERSION_FILE}" ]]; then
+    [[ ${QUIET} -eq 1 ]] || echo "未内置 Steam 运行时，将由 umu-launcher 首次运行时下载"
+    exit 0
+fi
+
+channel=""; version=""; archive=""
+while IFS='=' read -r k v; do
+    case "${k}" in
+        channel) channel="${v}" ;;
+        version) version="${v}" ;;
+        archive) archive="${v}" ;;
+    esac
+done < "${VERSION_FILE}"
+
+if [[ -z "${channel}" || -z "${archive}" ]]; then
+    echo "内置 VERSION 文件不完整：${VERSION_FILE}" >&2
+    exit 1
+fi
+
+DATA_HOME="${XDG_DATA_HOME:-${HOME}/.local/share}"
+DEST="${DATA_HOME}/umu/${channel}"
+MARKER="${DEST}/.installed.ok"
+
+if [[ -f "${MARKER}" ]]; then
+    [[ ${QUIET} -eq 1 ]] || echo "Steam 运行时已就绪：${DEST}（${version}）"
+    exit 0
+fi
+
+if [[ ! -f "${SRC_DIR}/${archive}" ]]; then
+    echo "内置归档缺失：${SRC_DIR}/${archive}" >&2
+    exit 1
+fi
+
+# 安全护栏：只允许操作 $XDG_DATA_HOME/umu 下的目录
+case "${DEST}" in
+    "${DATA_HOME}/umu/"*) : ;;
+    *) echo "拒绝操作非常规路径：${DEST}" >&2; exit 1 ;;
+esac
+
+tmp="$(mktemp -d "${TMPDIR:-/tmp}/weos-steamrt.XXXXXX")" || exit 1
+trap 'rm -rf "${tmp}"' EXIT
+
+echo "解压内置 Steam 运行时 ${version}（约 600 MB，仅需一次）…"
+if [[ ${QUIET} -eq 0 ]] && [[ -n "${DISPLAY:-}${WAYLAND_DISPLAY:-}" ]] && command -v zenity >/dev/null 2>&1; then
+    ( tar -xJf "${SRC_DIR}/${archive}" -C "${tmp}" 2>/dev/null ) | \
+        zenity --progress --pulsing --auto-close --width=440 --title="WeOS" \
+               --text="正在初始化内置 Steam 运行时（约 600 MB，仅需一次）…" || true
+else
+    tar -xJf "${SRC_DIR}/${archive}" -C "${tmp}" || { echo "解压失败" >&2; exit 1; }
+fi
+
+src=""
+for d in "${tmp}"/*; do
+    [[ -d "${d}" ]] && src="${d}"
+done
+[[ -n "${src}" ]] || { echo "解压结果异常：找不到顶层目录" >&2; exit 1; }
+
+# 结构校验（与 umu 的 check_runtime 对齐）
+[[ -x "${src}/_v2-entry-point" ]] || { echo "结构异常：缺少 _v2-entry-point" >&2; exit 1; }
+[[ -x "${src}/pressure-vessel/bin/pv-verify" ]] || { echo "结构异常：缺少 pv-verify" >&2; exit 1; }
+ls -d "${src}"/*_platform_* >/dev/null 2>&1 || { echo "结构异常：缺少 *_platform_*" >&2; exit 1; }
+
+# 清掉可能残留的半成品
+if [[ -d "${DEST}" ]]; then
+    rm -rf "${DEST}"
+fi
+mkdir -p "${DEST}"
+
+# 用 tar 管道复制，保留权限位、符号链接与隐藏文件
+( cd "${src}" && tar -cf - . ) | ( cd "${DEST}" && tar -xf - ) \
+    || { echo "复制失败" >&2; exit 1; }
+
+ln -sfn _v2-entry-point "${DEST}/umu"
+printf 'ok\n' > "${MARKER}"
+printf '%s\n' "${version}" > "${DEST}/.weos-version"
+
+echo "完成：${DEST}（$(du -sh "${DEST}" 2>/dev/null | cut -f1)）"
+exit 0

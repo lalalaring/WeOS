@@ -81,8 +81,8 @@ export GAMEID=${GAMEID:-0}
 exec umu-run "$@"
 ```
 
-**首次运行需要联网**：umu-launcher 会下载 Steam Linux Runtime（sniper）切片到
-`~/.local/share/umu/`，约 300 MB，之后可离线使用。
+**Steam 运行时已内置**：ISO 自带 Steam Linux Runtime，首次使用时从本地解压到
+`~/.local/share/umu/steamrt4/`，无需联网。详见下文 4.1。
 
 ## 4. 双击运行 .exe
 
@@ -104,7 +104,36 @@ exec umu-run "$@"
 3. 优先调用 `umu-run`（自动管理 Steam Runtime），缺失时回退 `<GE>/proton run`；
 4. 输出写入 `~/.local/share/weos/logs/`，失败时弹窗并附带日志末尾 12 行。
 
-首次运行会提示下载 Steam Runtime（约 300 MB），之后可离线使用。
+首次运行时 `weos-steamrt-seed` 会把内置的 Steam 运行时释放到用户目录（见 4.1），
+全程不需要联网。
+
+### 4.1 内置 Steam 运行时
+
+| 项 | 值 |
+|---|---|
+| 归档 | `SteamLinuxRuntime_4.tar.xz`（约 165 MB） |
+| 来源 | `repo.steampowered.com/steamrt4/images/<版本>/` |
+| ISO 内位置 | `/opt/weos/steam-runtime/` |
+| 释放位置 | `~/.local/share/umu/steamrt4/`（约 600 MB，仅一次） |
+| 标记文件 | `~/.local/share/umu/steamrt4/.installed.ok` |
+
+`weos-steamrt-seed` 严格复现 umu 的安装约定——写入 `.installed.ok`、
+建立 `umu -> _v2-entry-point` 软链、保留 `steamrt4_platform_*` 目录结构——
+因此 umu 会认为运行时已安装，直接跳过下载。
+
+```bash
+weos-steamrt-seed              # 立即释放（图形进度条）
+weos-steamrt-seed --quiet      # 静默释放
+ls ~/.local/share/umu/steamrt4 # 检查结果
+```
+
+**更新**：默认允许 umu 联网时自动更新到最新 public beta。
+想锁定内置版本、禁止联网检查，设 `UMU_RUNTIME_UPDATE=0`。
+
+**不内置**：`config/build.env` 中 `BUNDLE_STEAM_RUNTIME="0"`，
+回退为 umu 首次运行自行下载，行为与上游一致。
+
+**边界**：Lutris / Heroic 走各自的运行时管理，不经过本脚本，仍会自行下载。
 
 **如果双击没有生效**（个别文件管理器不读 `mimeapps.list`）：
 
